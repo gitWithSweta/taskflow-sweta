@@ -42,14 +42,14 @@ If you ever split **backend** and **frontend** into separate GitHub repos, add a
 - **Never commit** `.env`, `backend/.env`, or any file containing real `JWT_SECRET`, production database passwords, or API keys.
 - If `.env` or secrets were ever committed, **rotate** `JWT_SECRET`, database passwords, and any other leaked values **before** you submit or share the repo.
 
-**Create the public GitHub repo and push** (run on your machine; replace `YOUR_GITHUB_USERNAME`):
+**Create the public GitHub repo and push** (run on your machine; replace `YOUR_GITHUB_USERNAME`). If this folder is **already** a git repository with a first commit, skip `git init` / `git commit` and only add the remote + push.
 
 ```bash
-cd /path/to/TaskFlow
-git init
+cd /path/to/taskflow-Sweta
+git init   # skip if .git already exists
 git add .
-git status   # confirm .env and node_modules are NOT listed
-git commit -m "Initial commit: TaskFlow monorepo"
+git status   # confirm .env, backend/.env, and node_modules are NOT listed
+git commit -m "Initial commit: TaskFlow monorepo"   # skip if already committed
 git branch -M main
 ```
 
