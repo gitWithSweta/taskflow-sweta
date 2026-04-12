@@ -1,0 +1,4 @@
+owner_email,project_slot,title,description,status,priority,assignee_email,due_date
+test@example.com,1,Backlog task,Ready to pick up,todo,medium,test@example.com,2026-04-20
+test@example.com,1,Active task,Work in progress,in_progress,high,,2026-04-25
+test@example.com,1,Completed task,Shipped work,done,low,test@example.com,2026-04-01

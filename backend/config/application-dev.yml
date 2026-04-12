@@ -1,0 +1,33 @@
+app:
+  name: taskflow
+  env: development
+  log_level: DEBUG
+
+server:
+  port: 4000
+  read_timeout: 15s
+  write_timeout: 30s
+  idle_timeout: 60s
+  shutdown_timeout: 15s
+
+db:
+  url: "postgres://taskflow:taskflow@localhost:5432/taskflow?sslmode=disable"
+  pool:
+    max_conns: 10
+    min_conns: 2
+    max_conn_lifetime: 30m
+    max_conn_lifetime_jitter: 2m
+    max_conn_idle_time: 10m
+    health_check_period: 30s
+    connect_timeout: 5s
+    statement_timeout: 10s
+
+auth:
+  jwt_secret: ""
+  token_ttl: 24h
+
+cors:
+  allowed_origins: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+
+seed:
+  csv_dir: ""

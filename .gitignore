@@ -1,0 +1,16 @@
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.env
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+*.log
+.DS_Store
+/package-lock.json
+
+__debug_bin*
+**/__debug_bin*
+.claude/settings.local.json
