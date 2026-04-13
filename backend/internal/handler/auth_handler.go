@@ -11,12 +11,12 @@ import (
 )
 
 type AuthHandler struct {
-	svc authApplication
-	log *slog.Logger
+	authService authService
+	log         *slog.Logger
 }
 
-func NewAuthHandler(svc authApplication, log *slog.Logger) *AuthHandler {
-	return &AuthHandler{svc: svc, log: log}
+func NewAuthHandler(authService authService, log *slog.Logger) *AuthHandler {
+	return &AuthHandler{authService: authService, log: log}
 }
 
 type registerBody struct {
@@ -50,7 +50,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteValidation(w, fields)
 		return
 	}
-	token, u, err := h.svc.Register(r.Context(), name, email, body.Password)
+	token, u, err := h.authService.Register(r.Context(), name, email, body.Password)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -80,7 +80,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteValidation(w, fields)
 		return
 	}
-	token, u, err := h.svc.Login(r.Context(), email, body.Password)
+	token, u, err := h.authService.Login(r.Context(), email, body.Password)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -94,7 +94,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrUnauthorized)
 		return
 	}
-	u, err := h.svc.Me(r.Context(), uid)
+	u, err := h.authService.Me(r.Context(), uid)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -108,7 +108,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrUnauthorized)
 		return
 	}
-	if err := h.svc.Logout(r.Context(), sessionID); err != nil {
+	if err := h.authService.Logout(r.Context(), sessionID); err != nil {
 		writeErr(w, r, h.log, err)
 		return
 	}
@@ -120,7 +120,7 @@ func (h *AuthHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrUnauthorized)
 		return
 	}
-	list, err := h.svc.ListUsers(r.Context())
+	list, err := h.authService.ListUsers(r.Context())
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return

@@ -24,27 +24,27 @@ type Server struct {
 }
 
 func New(cfg *config.Config, pool *pgxpool.Pool, log *slog.Logger) *Server {
-	users := repository.NewUserRepository(pool)
-	projects := repository.NewProjectRepository(pool)
-	tasks := repository.NewTaskRepository(pool)
-	sessions := repository.NewSessionRepository(pool)
+	userRepository := repository.NewUserRepository(pool)
+	projectRepository := repository.NewProjectRepository(pool)
+	taskRepository := repository.NewTaskRepository(pool)
+	sessionRepository := repository.NewSessionRepository(pool)
 
 	secret := []byte(cfg.Auth.JWTSecret)
-	authSvc := service.NewAuth(users, sessions, secret, cfg.Auth.TokenTTL.Duration)
-	projSvc := service.NewProject(projects, tasks, users)
-	taskSvc := service.NewTask(projects, tasks, users)
+	authService := service.NewAuthService(userRepository, sessionRepository, secret, cfg.Auth.TokenTTL.Duration)
+	projectService := service.NewProjectService(projectRepository, taskRepository, userRepository)
+	taskService := service.NewTaskService(projectRepository, taskRepository, userRepository)
 
-	authH := handler.NewAuthHandler(authSvc, log)
-	projH := handler.NewProjectHandler(projSvc, log)
-	taskH := handler.NewTaskHandler(taskSvc, log)
+	authHandler := handler.NewAuthHandler(authService, log)
+	projectHandler := handler.NewProjectHandler(projectService, log)
+	taskHandler := handler.NewTaskHandler(taskService, log)
 
 	deps := routeDeps{
-		log:      log,
-		secret:   secret,
-		sessions: sessions,
-		authH:    authH,
-		projH:    projH,
-		taskH:    taskH,
+		log:             log,
+		secret:          secret,
+		sessions:        sessionRepository,
+		authHandler:     authHandler,
+		projectHandler:  projectHandler,
+		taskHandler:     taskHandler,
 	}
 
 	s := &Server{

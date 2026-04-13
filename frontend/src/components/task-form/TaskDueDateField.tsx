@@ -5,9 +5,10 @@ type Props = {
   value: string
   onChange: (v: string) => void
   fieldError?: string
+  min?: string
 }
 
-export function TaskDueDateField({ value, onChange, fieldError }: Props) {
+export function TaskDueDateField({ value, onChange, fieldError, min }: Props) {
   return (
     <div>
       <Label htmlFor="ts-due">Due date</Label>
@@ -15,6 +16,7 @@ export function TaskDueDateField({ value, onChange, fieldError }: Props) {
         id="ts-due"
         type="date"
         value={value}
+        min={min}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1"
       />

@@ -16,3 +16,6 @@ frontend/.env.*.local
 __debug_bin*
 **/__debug_bin*
 .claude/settings.local.json
+
+
+CLAUDE.md

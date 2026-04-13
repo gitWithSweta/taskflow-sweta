@@ -93,12 +93,6 @@ export function LoginPage() {
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
-        <p className="mt-4 text-center text-xs leading-relaxed text-fg-soft">
-          Using CSV demo users? Password for all{' '}
-          <span className="font-mono text-fg-muted">seed*@taskflow.demo</span> accounts is{' '}
-          <span className="font-mono font-medium text-fg-dim">Testpass1</span> (capital T, ends with digit 1). They
-          are created the first time the API starts against an empty database.
-        </p>
       </div>
     </div>
   )

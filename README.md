@@ -126,8 +126,8 @@ So from the reviewer’s laptop: **one origin** (`http://localhost:3000`) for bo
 
 ### 2.5 Authorization (who can do what)
 
-- **Project owner** — full CRUD on the project and its tasks (with some PATCH rules for sensitive fields).
-- **Task assignee or creator** — can see the project and participate; can PATCH tasks they are allowed to touch per service rules; **delete task** is allowed for **project owner** or **task creator** only.
+- **Project owner** — full CRUD on the project and its tasks.
+- **Anyone with project access** (owner, or assignee/creator on any task in the project) — can **PATCH** any task in that project; **delete task** is only for **project owner** or **that task’s creator**. Task **creator** is set at creation and is not changed via the API.
 
 This is enforced in the **service** layer, not only in HTTP handlers.
 
@@ -142,7 +142,7 @@ Strict order: **Handler → Service → Repository → SQL**. A shared **`intern
 | Layer | Responsibility | Typical packages |
 |-------|----------------|------------------|
 | **Handler** | HTTP only: read JSON/query, call service, map `model` → JSON DTOs, map errors → status codes. **Must not** import `repository`. | `internal/handler` |
-| **Service** | Business rules, authorization, orchestration. Depends on **interfaces** defined in `internal/service/repos.go`, not concrete repos. **Must not** import `encoding/json` or pgx. | `internal/service` |
+| **Service** | Business rules, authorization, orchestration. Depends on **interfaces** defined in `internal/service/service_repos.go`, not concrete repos. **Must not** import `encoding/json` or pgx. | `internal/service` |
 | **Repository** | Parameterized SQL via pgx; scan into `model` types; translate `pgx.ErrNoRows` and constraint violations into small domain errors (`errs` package). | `internal/repository` |
 | **Model** | Plain structs and enums (e.g. `TaskPatch` for partial updates). | `internal/model` |
 
@@ -154,7 +154,7 @@ Strict order: **Handler → Service → Repository → SQL**. A shared **`intern
 - **`internal/db`** — Builds pgx pool from config; runs **embedded** migrations from `migrations/*.sql` via `migrations/embed.go`.
 - **`internal/auth`** — `HashPassword` / `CheckPassword` (bcrypt cost 12); `SignToken` / `ParseToken` (JWT with `user_id`, `email`, `jti`, expiry aligned with session row).
 - **`internal/middleware`** — `RequireAuth`: Bearer parse → JWT verify → session existence check → set `user_id` and session id in context. Structured request logging and trace IDs.
-- **`internal/handler/errors.go`** — Maps `errs.ErrNotFound` → 404, `ErrForbidden` → 403, invalid credentials / unauthorized → 401, validation maps → 400 with `fields` object.
+- **`internal/handler/handler_errors.go`** — Maps `errs.ErrNotFound` → 404, `ErrForbidden` → 403, invalid credentials / unauthorized → 401, validation maps → 400 with `fields` object.
 - **`internal/httpx`** — `WriteJSON`, `WriteValidation`, bounded `ReadJSON`.
 - **`internal/server/routes.go`** — Registers `/healthz` and `/api/...` routes; wires CORS from config.
 
@@ -172,11 +172,12 @@ Defined in versioned SQL under `backend/migrations/`:
 
 On every API startup, `seed.ApplyIfNeeded`:
 
-1. If a row exists in `app_seed_state` for the fixed marker key, **return immediately** (idempotent across restarts).
-2. Otherwise load `users.csv`, `projects.csv`, `tasks.csv` from, in order: **`SEED_CSV_DIR`** if set; else `data/seed/` relative to process cwd; else `data/seed/` next to the executable (Docker copies `backend/data/seed` to `/app/data/seed/`).
-3. Insert users (hashing passwords), then projects (referencing owner emails from the CSV), then tasks (referencing project slot + owner email), then insert the marker row, all in **one transaction**.
+1. If **`TASKFLOW_REAPPLY_CSV_SEED=1`** and **`APP_ENV=development`**, truncate `users`, `projects`, `tasks`, and `user_sessions`, and delete the marker row (so CSV is applied again on this run). Ignored in production-style configs.
+2. If a row exists in `app_seed_state` for the fixed marker key, **return immediately** (idempotent across restarts). Logs: `csv seed skipped (marker already applied)`.
+3. Otherwise load `users.csv`, `projects.csv`, `tasks.csv` from, in order: **`SEED_CSV_DIR`** if set; else **`data/seed/`** relative to process cwd (works when `cwd` is **`backend/`**); else **`backend/data/seed/`** (when `cwd` is the **repo root**, e.g. some IDE run configs); else **`data/seed/`** next to the executable (Docker: `/app/data/seed/`).
+4. Insert users (hashing passwords), then projects, then tasks, then insert the marker row, all in **one transaction**.
 
-If you change CSV after seed already ran, you must reset the DB or remove the marker row (see [Test credentials](#7-test-credentials)).
+If you change CSV after seed already ran, use **`docker compose down -v`**, or dev **`TASKFLOW_REAPPLY_CSV_SEED=1`**, or remove the marker row and clear tables (see [Test credentials](#7-test-credentials)).
 
 ### 3.5 Frontend structure
 
@@ -351,6 +352,8 @@ Content-Type: application/json
 }
 ```
 
+`due_date`, if present, must be **today or later** (calendar date, UTC).
+
 **Task object (shape)**
 
 ```json
@@ -369,7 +372,7 @@ Content-Type: application/json
 }
 ```
 
-**PATCH notes:** Send only fields that change. For `assignee_id`, JSON `null` or `""` clears the assignee; omit the key to leave it unchanged. `creator_id` may be updated only by the project owner.
+**PATCH notes:** Send only fields that change. For `assignee_id`, JSON `null` or `""` clears the assignee; omit the key to leave it unchanged. `creator_id` is read-only in responses and cannot be set on PATCH.
 
 There is **no** Postman or Bruno collection checked into this repository; copy the examples above into your HTTP client if needed.
 

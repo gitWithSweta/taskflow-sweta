@@ -48,8 +48,7 @@ type TaskPatch struct {
 	Status       *string
 	Priority     *string
 	DueDate      *time.Time
-	DueDateClear bool       // true when due_date was sent as "" or null (explicit clear to nil)
-	AssigneeID   *uuid.UUID // the new value; nil when clearing or not provided
-	AssigneeSet  bool       // true when the assignee_id key was present in the PATCH body
-	CreatorID    *uuid.UUID // nil = not provided
+	DueDateClear bool
+	AssigneeID   *uuid.UUID
+	AssigneeSet  bool
 }

@@ -29,9 +29,16 @@ type projMapKey struct {
 }
 
 func ApplyIfNeeded(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, log *slog.Logger) error {
+	if err := maybeReapplyDevSeed(ctx, pool, cfg, log); err != nil {
+		return err
+	}
+
 	var one int
 	err := pool.QueryRow(ctx, `SELECT 1 FROM app_seed_state WHERE key = $1`, markerKey).Scan(&one)
 	if err == nil {
+		if log != nil {
+			log.Info("csv seed skipped (marker already applied)", "marker", markerKey)
+		}
 		return nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -209,6 +216,37 @@ func ApplyIfNeeded(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, 
 	return nil
 }
 
+func maybeReapplyDevSeed(ctx context.Context, pool *pgxpool.Pool, cfg *config.Config, log *slog.Logger) error {
+	if strings.TrimSpace(os.Getenv("TASKFLOW_REAPPLY_CSV_SEED")) != "1" {
+		return nil
+	}
+	if !strings.EqualFold(strings.TrimSpace(cfg.App.Env), "development") {
+		if log != nil {
+			log.Warn("TASKFLOW_REAPPLY_CSV_SEED ignored (only honored when app.env is development)")
+		}
+		return nil
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if _, err := tx.Exec(ctx, `TRUNCATE tasks, projects, user_sessions, users CASCADE`); err != nil {
+		return fmt.Errorf("reapply seed truncate: %w", err)
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM app_seed_state WHERE key = $1`, markerKey); err != nil {
+		return fmt.Errorf("reapply seed clear marker: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	if log != nil {
+		log.Warn("TASKFLOW_REAPPLY_CSV_SEED: truncated users/projects/tasks/sessions and removed seed marker; seed will run")
+	}
+	return nil
+}
+
 func loadCSVBytes(cfg *config.Config, filename string) ([]byte, error) {
 	if d := strings.TrimSpace(cfg.Seed.CSVDir); d != "" {
 		b, err := os.ReadFile(filepath.Join(d, filename))
@@ -219,6 +257,7 @@ func loadCSVBytes(cfg *config.Config, filename string) ([]byte, error) {
 	}
 	candidates := []string{
 		filepath.Join("data", "seed", filename),
+		filepath.Join("backend", "data", "seed", filename),
 	}
 	if exe, err := os.Executable(); err == nil {
 		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "data", "seed", filename))
@@ -231,7 +270,7 @@ func loadCSVBytes(cfg *config.Config, filename string) ([]byte, error) {
 		}
 		lastErr = err
 	}
-	return nil, fmt.Errorf("read seed %q: %w (paths: %v)", filename, lastErr, candidates)
+	return nil, fmt.Errorf("read seed %q: %w (tried: %v)", filename, lastErr, candidates)
 }
 
 func parseCSV(b []byte) ([][]string, error) {

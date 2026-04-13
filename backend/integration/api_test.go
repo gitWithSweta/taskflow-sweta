@@ -503,6 +503,24 @@ func TestTasks_CreateAndList(t *testing.T) {
 		}
 	})
 
+	t.Run("create with due_date in the past returns 400", func(t *testing.T) {
+		past := time.Now().UTC().AddDate(0, 0, -2).Format("2006-01-02")
+		resp := e.do(t, http.MethodPost, "/api/projects/"+pid+"/tasks", alice.Token, map[string]string{
+			"title": "Stale due", "due_date": past,
+		})
+		assertStatus(t, resp, http.StatusBadRequest)
+		resp.Body.Close()
+	})
+
+	t.Run("create with due_date today returns 201", func(t *testing.T) {
+		today := time.Now().UTC().Format("2006-01-02")
+		resp := e.do(t, http.MethodPost, "/api/projects/"+pid+"/tasks", alice.Token, map[string]string{
+			"title": "Due today", "due_date": today,
+		})
+		assertStatus(t, resp, http.StatusCreated)
+		resp.Body.Close()
+	})
+
 	t.Run("?assignee= filters by assignee_id", func(t *testing.T) {
 
 		bobID := bob.User.ID
@@ -560,6 +578,24 @@ func TestTasks_PatchAndDelete(t *testing.T) {
 		})
 		assertStatus(t, resp, http.StatusBadRequest)
 		resp.Body.Close()
+	})
+
+	t.Run("project collaborator may patch task they did not create and are not assignee on", func(t *testing.T) {
+		resp := e.do(t, http.MethodPost, "/api/projects/"+pid+"/tasks", alice.Token, map[string]string{
+			"title": "Bob lane", "assignee_id": bob.User.ID,
+		})
+		assertStatus(t, resp, http.StatusCreated)
+		resp.Body.Close()
+
+		resp = e.do(t, http.MethodPatch, "/api/tasks/"+tid, bob.Token, map[string]string{
+			"title": "Bob updated Alice task",
+		})
+		assertStatus(t, resp, http.StatusOK)
+		var updated map[string]any
+		mustDecode(t, resp, &updated)
+		if updated["title"] != "Bob updated Alice task" {
+			t.Fatalf("title: got %v", updated["title"])
+		}
 	})
 
 	t.Run("non-owner non-creator delete → 403 or 404", func(t *testing.T) {

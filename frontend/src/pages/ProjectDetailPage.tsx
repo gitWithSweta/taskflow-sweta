@@ -438,7 +438,6 @@ export function ProjectDetailPage() {
           projectId={id}
           currentUserId={user.id}
           task={editing}
-          isProjectOwner={isProjectOwner}
           assigneeRoster={assigneeFilterUsers}
           assigneeRosterLoading={assigneeDirectoryLoading}
           onSubmit={async (data) => {
@@ -457,9 +456,6 @@ export function ProjectDetailPage() {
               payload.due_date = data.due_date
             } else {
               payload.due_date = null
-            }
-            if (editing && isProjectOwner && data.creator_id !== undefined) {
-              payload.creator_id = data.creator_id
             }
             if (editing) {
               await api.patchTask(editing.id, payload)

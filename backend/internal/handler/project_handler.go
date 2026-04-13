@@ -15,12 +15,12 @@ import (
 )
 
 type ProjectHandler struct {
-	svc projectApplication
-	log *slog.Logger
+	projectService projectService
+	log            *slog.Logger
 }
 
-func NewProjectHandler(svc projectApplication, log *slog.Logger) *ProjectHandler {
-	return &ProjectHandler{svc: svc, log: log}
+func NewProjectHandler(projectService projectService, log *slog.Logger) *ProjectHandler {
+	return &ProjectHandler{projectService: projectService, log: log}
 }
 
 func parsePagination(r *http.Request) (limit, offset int) {
@@ -50,7 +50,7 @@ func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	limit, offset := parsePagination(r)
-	list, total, err := h.svc.List(r.Context(), uid, limit, offset)
+	list, total, err := h.projectService.List(r.Context(), uid, limit, offset)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -89,7 +89,7 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteValidation(w, map[string]string{"name": "is required"})
 		return
 	}
-	p, err := h.svc.Create(r.Context(), uid, name, body.Description)
+	p, err := h.projectService.Create(r.Context(), uid, name, body.Description)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -108,7 +108,7 @@ func (h *ProjectHandler) Get(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrNotFound)
 		return
 	}
-	p, tasks, err := h.svc.GetWithTasks(r.Context(), uid, id)
+	p, tasks, err := h.projectService.GetWithTasks(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -152,7 +152,7 @@ func (h *ProjectHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		}
 		newOwnerUUID = &oid
 	}
-	p, err := h.svc.Patch(r.Context(), uid, id, body.Name, body.Description, newOwnerUUID)
+	p, err := h.projectService.Patch(r.Context(), uid, id, body.Name, body.Description, newOwnerUUID)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -171,7 +171,7 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrNotFound)
 		return
 	}
-	if err := h.svc.Delete(r.Context(), uid, id); err != nil {
+	if err := h.projectService.Delete(r.Context(), uid, id); err != nil {
 		writeErr(w, r, h.log, err)
 		return
 	}
@@ -189,7 +189,7 @@ func (h *ProjectHandler) Collaborators(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrNotFound)
 		return
 	}
-	users, err := h.svc.Collaborators(r.Context(), uid, id)
+	users, err := h.projectService.Collaborators(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -212,7 +212,7 @@ func (h *ProjectHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrNotFound)
 		return
 	}
-	byStatus, byAssignee, err := h.svc.Stats(r.Context(), uid, id)
+	byStatus, byAssignee, err := h.projectService.Stats(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return

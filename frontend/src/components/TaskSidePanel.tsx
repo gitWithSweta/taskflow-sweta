@@ -40,7 +40,6 @@ type Props = {
   projectId: string
   currentUserId: string
   task?: Task | null
-  isProjectOwner?: boolean
   assigneeRoster?: User[]
   assigneeRosterLoading?: boolean
   onSubmit: (data: {
@@ -60,7 +59,6 @@ export function TaskSidePanel({
   projectId,
   currentUserId,
   task,
-  isProjectOwner = false,
   assigneeRoster,
   assigneeRosterLoading: assigneeRosterLoadingProp,
   onSubmit,
@@ -78,7 +76,6 @@ export function TaskSidePanel({
     open,
     projectId,
     task,
-    isProjectOwner,
     onSubmit,
     onSuccessClose: () => onOpenChange(false),
   })
@@ -256,32 +253,11 @@ export function TaskSidePanel({
                   allowUnassigned
                   fieldError={form.fields.assignee_id}
                 />
-                {task && isProjectOwner ? (
-                  <UserSearchPickerField
-                    label="Task creator (ownership)"
-                    hint="Only the project owner can transfer who is recorded as the task creator (for delete permissions)."
-                    users={allUsers}
-                    usersLoading={usersLoading}
-                    usersError={null}
-                    currentUserId={currentUserId}
-                    value={form.creatorId}
-                    onChange={form.setCreatorId}
-                    searchOpen={form.creatorPickerOpen}
-                    onSearchOpenChange={form.setCreatorPickerOpen}
-                    search={form.creatorSearch}
-                    onSearchChange={form.setCreatorSearch}
-                    inputRef={form.creatorInputRef}
-                    inputId="ts-creator-search"
-                    listboxId="ts-creator-list"
-                    ariaListLabel="Choose task creator"
-                    fieldError={form.fields.creator_id}
-                    editButtonLabel="Transfer"
-                  />
-                ) : null}
                 <TaskDueDateField
                   value={form.dueDate}
                   onChange={form.setDueDate}
                   fieldError={form.fields.due_date}
+                  min={task ? undefined : new Date().toISOString().slice(0, 10)}
                 />
               </div>
             </div>

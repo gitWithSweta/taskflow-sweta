@@ -14,12 +14,12 @@ import (
 )
 
 type routeDeps struct {
-	log      *slog.Logger
-	secret   []byte
-	sessions middleware.SessionValidator // checked on every authenticated request
-	authH    *handler.AuthHandler
-	projH    *handler.ProjectHandler
-	taskH    *handler.TaskHandler
+	log             *slog.Logger
+	secret          []byte
+	sessions        middleware.SessionValidator
+	authHandler     *handler.AuthHandler
+	projectHandler  *handler.ProjectHandler
+	taskHandler     *handler.TaskHandler
 }
 
 func registerHealth(r chi.Router) {
@@ -51,35 +51,35 @@ func registerAPIRoutes(r chi.Router, d routeDeps) {
 
 func registerAuthRoutes(r chi.Router, d routeDeps) {
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", d.authH.Register)
-		r.Post("/login", d.authH.Login)
+		r.Post("/register", d.authHandler.Register)
+		r.Post("/login", d.authHandler.Login)
 	})
 }
 
 func registerProtectedAuthRoutes(r chi.Router, d routeDeps) {
-	r.Get("/auth/me", d.authH.Me)
-	r.Post("/auth/logout", d.authH.Logout)
+	r.Get("/auth/me", d.authHandler.Me)
+	r.Post("/auth/logout", d.authHandler.Logout)
 }
 
 func registerUserRoutes(r chi.Router, d routeDeps) {
-	r.Get("/users", d.authH.ListUsers)
+	r.Get("/users", d.authHandler.ListUsers)
 }
 
 func registerProjectRoutes(r chi.Router, d routeDeps) {
-	r.Get("/projects", d.projH.List)
-	r.Post("/projects", d.projH.Create)
-	r.Get("/projects/{id}/collaborators", d.projH.Collaborators)
-	r.Get("/projects/{id}/stats", d.projH.Stats)
-	r.Get("/projects/{id}/tasks", d.taskH.List)
-	r.Post("/projects/{id}/tasks", d.taskH.Create)
-	r.Get("/projects/{id}", d.projH.Get)
-	r.Patch("/projects/{id}", d.projH.Patch)
-	r.Delete("/projects/{id}", d.projH.Delete)
+	r.Get("/projects", d.projectHandler.List)
+	r.Post("/projects", d.projectHandler.Create)
+	r.Get("/projects/{id}/collaborators", d.projectHandler.Collaborators)
+	r.Get("/projects/{id}/stats", d.projectHandler.Stats)
+	r.Get("/projects/{id}/tasks", d.taskHandler.List)
+	r.Post("/projects/{id}/tasks", d.taskHandler.Create)
+	r.Get("/projects/{id}", d.projectHandler.Get)
+	r.Patch("/projects/{id}", d.projectHandler.Patch)
+	r.Delete("/projects/{id}", d.projectHandler.Delete)
 }
 
 func registerTaskRoutes(r chi.Router, d routeDeps) {
-	r.Patch("/tasks/{id}", d.taskH.Patch)
-	r.Delete("/tasks/{id}", d.taskH.Delete)
+	r.Patch("/tasks/{id}", d.taskHandler.Patch)
+	r.Delete("/tasks/{id}", d.taskHandler.Delete)
 }
 
 func newRouter(cfg *config.Config, d routeDeps) chi.Router {

@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type authApplication interface {
+type authService interface {
 	Register(ctx context.Context, name, email, password string) (token string, user model.UserPublic, err error)
 	Login(ctx context.Context, email, password string) (token string, user model.UserPublic, err error)
 	Me(ctx context.Context, uid uuid.UUID) (model.UserPublic, error)
@@ -17,7 +17,7 @@ type authApplication interface {
 	Logout(ctx context.Context, sessionID uuid.UUID) error
 }
 
-type projectApplication interface {
+type projectService interface {
 	List(ctx context.Context, uid uuid.UUID, limit, offset int) ([]model.Project, int, error)
 	Create(ctx context.Context, uid uuid.UUID, name string, description *string) (*model.Project, error)
 	GetWithTasks(ctx context.Context, uid, projectID uuid.UUID) (*model.Project, []model.Task, error)
@@ -27,7 +27,7 @@ type projectApplication interface {
 	Stats(ctx context.Context, uid, projectID uuid.UUID) (map[string]int, map[string]int, error)
 }
 
-type taskApplication interface {
+type taskService interface {
 	List(ctx context.Context, uid, projectID uuid.UUID, status *string, assignee *uuid.UUID, limit, offset int) ([]model.Task, int, error)
 	Create(ctx context.Context, uid, projectID uuid.UUID, title string, description *string, status, priority string, assignee *uuid.UUID, dueDate *time.Time) (*model.Task, error)
 	Patch(ctx context.Context, uid, taskID uuid.UUID, patch model.TaskPatch) (*model.Task, error)

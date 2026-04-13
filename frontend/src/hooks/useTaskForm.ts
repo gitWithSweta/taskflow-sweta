@@ -9,23 +9,24 @@ export type TaskFormSubmitData = {
   priority: Task['priority']
   assignee_id: string | null
   due_date: string
-  creator_id?: string
 }
 
 type Options = {
   open: boolean
   projectId: string
   task?: Task | null
-  isProjectOwner: boolean
   onSubmit: (data: TaskFormSubmitData) => Promise<void>
   onSuccessClose: () => void
+}
+
+function utcTodayYYYYMMDD(): string {
+  return new Date().toISOString().slice(0, 10)
 }
 
 export function useTaskForm({
   open,
   projectId,
   task,
-  isProjectOwner,
   onSubmit,
   onSuccessClose,
 }: Options) {
@@ -35,16 +36,12 @@ export function useTaskForm({
   const [priority, setPriority] = useState<Task['priority']>('medium')
   const [assigneeId, setAssigneeId] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const [creatorId, setCreatorId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fields, setFields] = useState<Record<string, string>>({})
   const [assigneeSearch, setAssigneeSearch] = useState('')
   const [assigneePickerOpen, setAssigneePickerOpen] = useState(false)
-  const [creatorSearch, setCreatorSearch] = useState('')
-  const [creatorPickerOpen, setCreatorPickerOpen] = useState(false)
   const assigneeInputRef = useRef<HTMLInputElement>(null)
-  const creatorInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -55,7 +52,6 @@ export function useTaskForm({
       setPriority(task.priority)
       setAssigneeId(task.assignee_id ?? '')
       setDueDate(task.due_date ?? '')
-      setCreatorId(task.creator_id ?? '')
     } else {
       setTitle('')
       setDescription('')
@@ -63,14 +59,11 @@ export function useTaskForm({
       setPriority('medium')
       setAssigneeId('')
       setDueDate('')
-      setCreatorId('')
     }
     setError(null)
     setFields({})
     setAssigneeSearch('')
     setAssigneePickerOpen(false)
-    setCreatorSearch('')
-    setCreatorPickerOpen(false)
   }, [open, task?.id, projectId])
 
   useEffect(() => {
@@ -78,12 +71,6 @@ export function useTaskForm({
     const id = requestAnimationFrame(() => assigneeInputRef.current?.focus())
     return () => cancelAnimationFrame(id)
   }, [assigneePickerOpen])
-
-  useEffect(() => {
-    if (!creatorPickerOpen) return
-    const id = requestAnimationFrame(() => creatorInputRef.current?.focus())
-    return () => cancelAnimationFrame(id)
-  }, [creatorPickerOpen])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -93,8 +80,8 @@ export function useTaskForm({
       setFields({ title: 'is required' })
       return
     }
-    if (task && isProjectOwner && !creatorId) {
-      setFields({ creator_id: 'Task creator is required' })
+    if (!task && dueDate && dueDate < utcTodayYYYYMMDD()) {
+      setFields({ due_date: 'Due date cannot be in the past' })
       return
     }
     setLoading(true)
@@ -106,7 +93,6 @@ export function useTaskForm({
         priority,
         assignee_id: assigneeId || null,
         due_date: dueDate,
-        ...(task && isProjectOwner ? { creator_id: creatorId } : {}),
       })
       onSuccessClose()
     } catch (err) {
@@ -135,8 +121,6 @@ export function useTaskForm({
     setAssigneeId,
     dueDate,
     setDueDate,
-    creatorId,
-    setCreatorId,
     loading,
     error,
     fields,
@@ -144,12 +128,7 @@ export function useTaskForm({
     setAssigneeSearch,
     assigneePickerOpen,
     setAssigneePickerOpen,
-    creatorSearch,
-    setCreatorSearch,
-    creatorPickerOpen,
-    setCreatorPickerOpen,
     assigneeInputRef,
-    creatorInputRef,
     handleSubmit,
   }
 }

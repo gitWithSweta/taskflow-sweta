@@ -16,12 +16,12 @@ import (
 )
 
 type TaskHandler struct {
-	svc taskApplication
-	log *slog.Logger
+	taskService taskService
+	log         *slog.Logger
 }
 
-func NewTaskHandler(svc taskApplication, log *slog.Logger) *TaskHandler {
-	return &TaskHandler{svc: svc, log: log}
+func NewTaskHandler(taskService taskService, log *slog.Logger) *TaskHandler {
+	return &TaskHandler{taskService: taskService, log: log}
 }
 
 func isValidStatus(s string) bool {
@@ -62,7 +62,7 @@ func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 		assignee = &id
 	}
 	limit, offset := parsePagination(r)
-	list, total, err := h.svc.List(r.Context(), uid, pid, status, assignee, limit, offset)
+	list, total, err := h.taskService.List(r.Context(), uid, pid, status, assignee, limit, offset)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -130,7 +130,7 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteValidation(w, map[string]string{"due_date": "use YYYY-MM-DD"})
 		return
 	}
-	t, err := h.svc.Create(r.Context(), uid, pid, title, body.Description, status, priority, assignee, due)
+	t, err := h.taskService.Create(r.Context(), uid, pid, title, body.Description, status, priority, assignee, due)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -144,8 +144,7 @@ type patchTaskBody struct {
 	Status      *string         `json:"status"`
 	Priority    *string         `json:"priority"`
 	DueDate     *string         `json:"due_date"`
-	AssigneeID  json.RawMessage `json:"assignee_id"`
-	CreatorID   json.RawMessage `json:"creator_id"`
+	AssigneeID json.RawMessage `json:"assignee_id"`
 }
 
 func (h *TaskHandler) Patch(w http.ResponseWriter, r *http.Request) {
@@ -203,26 +202,7 @@ func (h *TaskHandler) Patch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(body.CreatorID) > 0 {
-		var s string
-		if err := json.Unmarshal(body.CreatorID, &s); err != nil {
-			httpx.WriteValidation(w, map[string]string{"creator_id": "invalid"})
-			return
-		}
-		s = strings.TrimSpace(s)
-		if s == "" {
-			httpx.WriteValidation(w, map[string]string{"creator_id": "invalid uuid"})
-			return
-		}
-		id, err := uuid.Parse(s)
-		if err != nil {
-			httpx.WriteValidation(w, map[string]string{"creator_id": "invalid uuid"})
-			return
-		}
-		patch.CreatorID = &id
-	}
-
-	saved, err := h.svc.Patch(r.Context(), uid, tid, patch)
+	saved, err := h.taskService.Patch(r.Context(), uid, tid, patch)
 	if err != nil {
 		writeErr(w, r, h.log, err)
 		return
@@ -241,7 +221,7 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, r, h.log, errs.ErrNotFound)
 		return
 	}
-	if err := h.svc.Delete(r.Context(), uid, tid); err != nil {
+	if err := h.taskService.Delete(r.Context(), uid, tid); err != nil {
 		writeErr(w, r, h.log, err)
 		return
 	}
