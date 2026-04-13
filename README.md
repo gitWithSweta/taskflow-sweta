@@ -13,8 +13,6 @@ Full documentation for reviewers and contributors: **overview**, **high-level de
 7. [Test credentials](#7-test-credentials)  
 8. [API reference](#8-api-reference)  
 9. [What you would do with more time](#9-what-you-would-do-with-more-time)  
-10. [Repository (GitHub) and secrets](#10-repository-github-and-secrets)
-
 
 ## 1. Overview
 
