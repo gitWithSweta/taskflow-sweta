@@ -15,65 +15,6 @@ Full documentation for reviewers and contributors: **overview**, **high-level de
 9. [What you would do with more time](#9-what-you-would-do-with-more-time)  
 10. [Repository (GitHub) and secrets](#10-repository-github-and-secrets)
 
----
-
-## 10. Repository (GitHub) and secrets
-
-**Public repository name:** `taskflow-Sweta`
-
-**Layout — single monorepo** (not split into two repositories). Everything ships in one tree:
-
-```
-taskflow-Sweta/
-├── docker-compose.yml      # root Compose: postgres + API + web
-├── Dockerfile              # multi-stage build for the Go API
-├── .env.example            # committed template (no real secrets)
-├── .gitignore              # excludes .env and node_modules / dist
-├── backend/                # Go module (cmd/server, internal/, migrations/, data/seed/)
-├── frontend/               # Vite + React SPA
-└── README.md
-```
-
-If you ever split **backend** and **frontend** into separate GitHub repos, add a short “Related repo” link in each README; this submission uses the **monorepo** above.
-
-**Secrets**
-
-- **Commit** only `.env.example` (placeholders / safe local defaults for reviewers).
-- **Never commit** `.env`, `backend/.env`, or any file containing real `JWT_SECRET`, production database passwords, or API keys.
-- If `.env` or secrets were ever committed, **rotate** `JWT_SECRET`, database passwords, and any other leaked values **before** you submit or share the repo.
-
-**Create the public GitHub repo and push** (run on your machine; replace `YOUR_GITHUB_USERNAME`). If this folder is **already** a git repository with a first commit, skip `git init` / `git commit` and only add the remote + push.
-
-```bash
-cd /path/to/taskflow-Sweta
-git init   # skip if .git already exists
-git add .
-git status   # confirm .env, backend/.env, and node_modules are NOT listed
-git commit -m "Initial commit: TaskFlow monorepo"   # skip if already committed
-git branch -M main
-```
-
-**Option A — GitHub CLI** ([`gh`](https://cli.github.com/) installed and logged in):
-
-```bash
-gh repo create taskflow-Sweta --public --source=. --remote=origin --push
-```
-
-**Option B — GitHub website**
-
-1. New repository → name **`taskflow-Sweta`** → Public → **do not** add a README (you already have one).
-2. Then:
-
-```bash
-git remote add origin https://github.com/YOUR_GITHUB_USERNAME/taskflow-Sweta.git
-git push -u origin main
-```
-
-Clone URL for reviewers:
-
-`git clone https://github.com/YOUR_GITHUB_USERNAME/taskflow-Sweta.git`
-
----
 
 ## 1. Overview
 
@@ -168,17 +109,6 @@ Defined in versioned SQL under `backend/migrations/`:
 - **`app_seed_state`** — Tracks whether static CSV demo seed has run (`key` = marker string).
 - **`user_sessions`** — One row per issued JWT session; `id` matches JWT `jti`; `expires_at` matches token expiry; deleted on logout.
 
-### 3.4 CSV seed (algorithm)
-
-On every API startup, `seed.ApplyIfNeeded`:
-
-1. If **`TASKFLOW_REAPPLY_CSV_SEED=1`** and **`APP_ENV=development`**, truncate `users`, `projects`, `tasks`, and `user_sessions`, and delete the marker row (so CSV is applied again on this run). Ignored in production-style configs.
-2. If a row exists in `app_seed_state` for the fixed marker key, **return immediately** (idempotent across restarts). Logs: `csv seed skipped (marker already applied)`.
-3. Otherwise load `users.csv`, `projects.csv`, `tasks.csv` from, in order: **`SEED_CSV_DIR`** if set; else **`data/seed/`** relative to process cwd (works when `cwd` is **`backend/`**); else **`backend/data/seed/`** (when `cwd` is the **repo root**, e.g. some IDE run configs); else **`data/seed/`** next to the executable (Docker: `/app/data/seed/`).
-4. Insert users (hashing passwords), then projects, then tasks, then insert the marker row, all in **one transaction**.
-
-If you change CSV after seed already ran, use **`docker compose down -v`**, or dev **`TASKFLOW_REAPPLY_CSV_SEED=1`**, or remove the marker row and clear tables (see [Test credentials](#7-test-credentials)).
-
 ### 3.5 Frontend structure
 
 - **`App.tsx`** — Routes; protected routes wrapped in a guard that requires auth context.
@@ -215,7 +145,7 @@ Assume **Docker Desktop** (or compatible engine) is installed and running. **Go 
 git clone https://github.com/YOUR_GITHUB_USERNAME/taskflow-Sweta.git
 cd taskflow-Sweta
 cp .env.example .env
-docker compose up --build
+docker compose up
 ```
 
 - **`--build`** ensures images exist on first clone (images are not pushed to a registry in this workflow).
