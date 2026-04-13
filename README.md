@@ -317,6 +317,3 @@ There is **no** Postman or Bruno collection checked into this repository; copy t
 - **Accessibility and i18n** pass on the SPA (focus management in dialogs, reduced motion, translations).
 - **Frontend performance:** route-level code splitting; the production JS bundle is large today.
 
-**Honest shortcuts:** Reviewer setup assumes Docker; seed is “run once” via a marker table, not a full idempotent reconciliation; some UI hint text may not always match the latest CSV email unless updated together.
-
-Replace **`YOUR_GITHUB_USERNAME`** in clone URLs with your GitHub user or organization (see [§10](#10-repository-github-and-secrets)).
